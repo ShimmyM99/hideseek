@@ -1,0 +1,96 @@
+# HideSeek Camouflage Testing Configuration
+
+# Detection thresholds
+detection:
+  color_similarity_threshold: 5.0  # Delta-E units
+  pattern_match_threshold: 0.7
+  contrast_threshold: 0.1
+  edge_threshold: 50
+
+# Standard viewing distances (meters)
+distances:
+  standard: [5, 10, 25, 50, 100]
+  close_range: [2, 3, 5]
+  long_range: [100, 200, 500, 1000]
+
+# Environment types and their characteristics
+environments:
+  woodland:
+    primary_colors: ["#2d4a2b", "#4a6b3a", "#8b7355", "#654321"]
+    texture_complexity: 0.8
+    lighting_conditions: ["filtered", "dappled", "low"]
+  desert:
+    primary_colors: ["#c19a6b", "#daa520", "#f4a460", "#cd853f"]
+    texture_complexity: 0.3
+    lighting_conditions: ["harsh", "bright", "clear"]
+  urban:
+    primary_colors: ["#696969", "#708090", "#2f4f4f", "#000000"]
+    texture_complexity: 0.9
+    lighting_conditions: ["artificial", "mixed", "shadow"]
+  arctic:
+    primary_colors: ["#ffffff", "#f0f8ff", "#e6e6fa", "#dcdcdc"]
+    texture_complexity: 0.2
+    lighting_conditions: ["bright", "reflected", "uniform"]
+  tropical:
+    primary_colors: ["#228b22", "#006400", "#8fbc8f", "#32cd32"]
+    texture_complexity: 0.9
+    lighting_conditions: ["intense", "filtered", "humid"]
+
+# Scoring weights for different metrics
+scoring:
+  weights:
+    color_blending: 0.30
+    pattern_disruption: 0.25
+    brightness_matching: 0.20
+    distance_effectiveness: 0.25
+  
+  # Environment-specific weight adjustments
+  environment_adjustments:
+    desert:
+      brightness_matching: 0.35  # More important in desert
+      color_blending: 0.25
+    arctic:
+      brightness_matching: 0.40  # Critical in snow
+      pattern_disruption: 0.15
+    urban:
+      pattern_disruption: 0.35   # More complex patterns
+      color_blending: 0.25
+
+# Analysis parameters
+analysis:
+  color_space: "LAB"  # Perceptual color space
+  gamma_correction: 2.2
+  white_balance_method: "gray_world"
+  feature_detector: "ORB"  # Options: ORB, SIFT, SURF
+  texture_window_size: 32
+  edge_detector: "canny"
+  
+# Image processing settings
+image:
+  max_resolution: [1920, 1080]
+  supported_formats: [".jpg", ".jpeg", ".png", ".bmp", ".tiff"]
+  preprocessing:
+    denoise: true
+    enhance_contrast: false
+    normalize: true
+
+# Lighting simulation parameters
+lighting:
+  daylight:
+    color_temperature: 6500
+    intensity: 1.0
+  twilight:
+    color_temperature: 3000
+    intensity: 0.3
+  night:
+    color_temperature: 2000
+    intensity: 0.05
+  infrared:
+    wavelength_range: [0.7, 14.0]  # micrometers
+    
+# Output settings
+output:
+  report_format: "pdf"  # Options: pdf, html, json
+  include_visualizations: true
+  confidence_level: 0.95
+  decimal_precision: 2

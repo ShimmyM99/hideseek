@@ -1,0 +1,8 @@
+black==23.7.0
+flake8==6.0.0
+mypy==1.5.1
+pytest-cov==4.1.0
+pre-commit==3.4.0
+jupyter==1.0.0
+notebook==7.0.3
+ipykernel==6.25.2

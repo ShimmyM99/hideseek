@@ -171,7 +171,11 @@ class HideSeekReportGenerator:
         
         # Color analysis visualization (top right)
         ax2 = plt.subplot(2, 2, 2)
-        self._create_color_analysis_visual(ax2, results.get('color_analysis', {}), image_rgb)
+        # Get color analysis from the correct nested location
+        color_analysis = {}
+        if 'detailed_results' in results and 'color_blending' in results['detailed_results']:
+            color_analysis = results['detailed_results']['color_blending'].get('color_analysis', {})
+        self._create_color_analysis_visual(ax2, color_analysis, image_rgb)
         
         # Object segmentation mask (bottom left)
         ax3 = plt.subplot(2, 2, 3)
@@ -195,19 +199,46 @@ class HideSeekReportGenerator:
             ax.axis('off')
             return
         
-        # Show dominant colors if available
-        if 'dominant_colors' in color_analysis:
-            colors = color_analysis['dominant_colors'][:8]  # Show top 8 colors
-            color_squares = np.array(colors).reshape(2, 4, 3) / 255.0
-            ax.imshow(color_squares)
-            ax.set_title('Dominant Colors', fontsize=12)
+        # Show color analysis statistics
+        if 'delta_e_statistics' in color_analysis:
+            stats = color_analysis['delta_e_statistics']
+            # Create a visualization of color matching quality
+            ax.set_xlim(0, 10)
+            ax.set_ylim(0, 10)
+            
+            # Title and main score
+            score = color_analysis.get('color_matching_score', 0)
+            ax.text(5, 9, f'Color Matching: {score:.1f}/100', 
+                   ha='center', fontsize=12, fontweight='bold')
+            
+            # Delta-E statistics
+            mean_de = stats.get('mean_delta_e', 0)
+            ax.text(5, 7.5, f'Avg Color Difference: {mean_de:.1f} ΔE', 
+                   ha='center', fontsize=10)
+            
+            # Quality indicators
+            if 'quality_distribution' in color_analysis:
+                quality = color_analysis['quality_distribution']
+                excellent = quality.get('excellent', 0)
+                good = quality.get('good', 0) - excellent
+                acceptable = quality.get('acceptable', 0) - quality.get('good', 0)
+                
+                ax.text(5, 6, f'Quality Distribution:', ha='center', fontsize=10, fontweight='bold')
+                ax.text(5, 5.2, f'Excellent: {excellent}%', ha='center', fontsize=9, color='green')
+                ax.text(5, 4.6, f'Good: {good}%', ha='center', fontsize=9, color='blue')
+                ax.text(5, 4.0, f'Acceptable: {acceptable}%', ha='center', fontsize=9, color='orange')
+            
+            # Color scale reference
+            ax.text(5, 2.5, 'ΔE Scale:\n0-2: Excellent\n2-5: Good\n5-10: Acceptable\n>10: Poor', 
+                   ha='center', fontsize=8, 
+                   bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3))
         else:
             # Show a small version of the image with color analysis overlay
             small_img = cv2.resize(image, (200, 150))
             ax.imshow(small_img)
             
             # Add color score overlay
-            score = color_analysis.get('score', 0)
+            score = color_analysis.get('color_matching_score', 0)
             ax.text(10, 20, f'Color Score: {score:.1f}/100', 
                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
                    fontsize=10, fontweight='bold')

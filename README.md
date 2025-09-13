@@ -63,33 +63,41 @@ pip install hideseek
 ### CLI Usage
 
 ```bash
-# Single test
-hideseek test --image camo1.jpg --background forest.jpg --output report.pdf
+# Quick analysis (fastest)
+python -m hideseek quick --image camo.jpg
 
-# Batch testing
-hideseek batch --directory ./camo_samples/ --environment woodland
+# Full analysis with background
+python -m hideseek test --image camo.jpg --background forest.jpg --output report.pdf
+
+# Detailed analysis with visualizations
+python -m hideseek detailed --image camo.jpg --environment woodland --visualizations
+
+# Batch processing
+python -m hideseek batch --directory ./camo_samples --environment woodland --format json
 
 # Compare multiple patterns
-hideseek compare --patterns camo1.jpg camo2.jpg camo3.jpg --all-environments
+python -m hideseek compare --patterns camo1.jpg camo2.jpg camo3.jpg --output comparison.pdf
 
-# Quick analysis
-hideseek quick --image camo.jpg
+# System information
+python -m hideseek info
 ```
 
 ### Python API
 
 ```python
-from hideseek import HideSeekImageLoader, ColorBlendingAnalyzer
+from hideseek import get_image_loader
+from hideseek.analysis.pipeline_controller import PipelineController
+from hideseek import get_data_manager
 
 # Load images
-loader = HideSeekImageLoader()
+loader = get_image_loader()
 camo_img = loader.load_test_image("camouflage.jpg")
 bg_img = loader.load_test_image("background.jpg")
 
-# Analyze color blending
-analyzer = ColorBlendingAnalyzer()
-score = analyzer.compute_color_blend_score(camo_img, bg_img)
-print(f"Color blend effectiveness: {score}/100")
+# Run analysis
+controller = PipelineController(get_data_manager())
+results = controller.execute_quick_analysis(camo_img)
+print(f"Camouflage effectiveness: {results['overall_score']}/100")
 ```
 
 ## 📊 Analysis Modules
@@ -182,32 +190,41 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🎯 Roadmap
+## 🎯 Development Status
 
-### Phase 1 (Current)
+### ✅ Phase 1: Foundation (Complete)
 - [x] Core I/O and configuration system
 - [x] Project structure and Git setup
-- [ ] Color blending analysis pipeline
-- [ ] Pattern disruption analysis
-- [ ] Basic CLI interface
+- [x] Image loading and preprocessing
+- [x] Data management and session handling
+- [x] Basic report generation
 
-### Phase 2
-- [ ] Brightness and contrast analysis
-- [ ] Distance-based detection simulation  
-- [ ] Environmental context comparison
-- [ ] Comprehensive scoring system
+### ✅ Phase 2: Core Analysis (Complete)
+- [x] Color blending analysis pipeline with CIEDE2000
+- [x] Pattern disruption analysis with multi-feature detection
+- [x] Brightness and contrast analysis with multi-illumination
+- [x] Distance-based detection simulation
+- [x] Environmental context analyzer
 
-### Phase 3
-- [ ] Advanced visualization and reporting
-- [ ] Machine learning integration
+### ✅ Phase 3: Integration (Complete)
+- [x] Analysis router with intelligent pipeline selection
+- [x] Pipeline controller with multiple analysis modes
+- [x] Comprehensive scoring engine with adaptive weighting
+- [x] Professional CLI interface with 7 operation modes
+- [x] Multi-format reporting (PDF, HTML, JSON, CSV)
+
+### 🚀 Phase 4: Future Enhancements
+- [ ] Machine learning integration for pattern recognition
 - [ ] Real-time analysis capabilities
-- [ ] Web interface
+- [ ] Web interface and REST API  
+- [ ] Thermal and multispectral analysis
+- [ ] Advanced environmental simulation
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/username/hideseek/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/username/hideseek/discussions)
-- **Email**: hideseek@example.com
+- **Issues**: [GitHub Issues](https://github.com/ShimmyM99/hideseek/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ShimmyM99/hideseek/discussions)  
+- **Repository**: [HideSeek on GitHub](https://github.com/ShimmyM99/hideseek)
 
 ## 🔬 Scientific Applications
 

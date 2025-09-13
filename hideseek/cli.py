@@ -8,6 +8,13 @@ import json
 import time
 from datetime import datetime
 
+# Windows console encoding fix
+if sys.platform == "win32":
+    # Set UTF-8 encoding for Windows console
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 # Core imports
 from .core.image_loader import HideSeekImageLoader
 from .core.data_manager import TestDataManager

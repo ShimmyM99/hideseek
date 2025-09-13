@@ -10,12 +10,21 @@ __version__ = "1.0.0"
 __author__ = "HideSeek Development Team"
 __email__ = "hideseek@example.com"
 
-from .core.image_loader import HideSeekImageLoader
-from .core.data_manager import TestDataManager
-from .core.report_generator import HideSeekReportGenerator
+# Lazy imports to avoid dependency issues at startup
+def get_image_loader():
+    from .core.image_loader import HideSeekImageLoader
+    return HideSeekImageLoader
+
+def get_data_manager():
+    from .core.data_manager import TestDataManager
+    return TestDataManager
+
+def get_report_generator():
+    from .core.report_generator import HideSeekReportGenerator
+    return HideSeekReportGenerator
 
 __all__ = [
-    "HideSeekImageLoader",
-    "TestDataManager", 
-    "HideSeekReportGenerator"
+    "get_image_loader",
+    "get_data_manager", 
+    "get_report_generator"
 ]

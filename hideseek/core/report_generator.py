@@ -1,5 +1,7 @@
 import json
 import csv
+import os
+import cv2
 from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
 from datetime import datetime
@@ -106,6 +108,10 @@ class HideSeekReportGenerator:
             pdf.savefig(fig, bbox_inches='tight')
             plt.close()
             
+            # Image analysis page with visual explanations
+            if 'original_image' in results or 'image_path' in results:
+                self._create_image_analysis_page(pdf, results)
+            
             # Score breakdown page
             if 'component_scores' in results:
                 fig = self._create_score_breakdown_chart(results['component_scores'])
@@ -137,6 +143,143 @@ class HideSeekReportGenerator:
         
         logger.info(f"PDF report created successfully: {output_path}")
         return output_path
+    
+    def _create_image_analysis_page(self, pdf, results: Dict[str, Any]):
+        """Create a page with image analysis and visual explanations"""
+        
+        # Load the original image
+        image_path = results.get('image_path')
+        if image_path and os.path.exists(image_path):
+            image = cv2.imread(image_path)
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        elif 'original_image' in results:
+            image_rgb = results['original_image']
+        else:
+            return
+        
+        # Create figure with subplots
+        fig = plt.figure(figsize=(8.5, 11))
+        
+        # Main title
+        fig.suptitle('Visual Analysis Breakdown', fontsize=20, fontweight='bold', y=0.95)
+        
+        # Original image (top half)
+        ax1 = plt.subplot(2, 2, 1)
+        ax1.imshow(image_rgb)
+        ax1.set_title('Original Image', fontsize=14, fontweight='bold')
+        ax1.axis('off')
+        
+        # Color analysis visualization (top right)
+        ax2 = plt.subplot(2, 2, 2)
+        self._create_color_analysis_visual(ax2, results.get('color_analysis', {}), image_rgb)
+        
+        # Object segmentation mask (bottom left)
+        ax3 = plt.subplot(2, 2, 3)
+        self._create_segmentation_visual(ax3, results.get('segmentation', {}), image_rgb)
+        
+        # Score summary with visual indicators (bottom right)
+        ax4 = plt.subplot(2, 2, 4)
+        self._create_score_visual_summary(ax4, results)
+        
+        plt.tight_layout()
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+    
+    def _create_color_analysis_visual(self, ax, color_analysis: Dict[str, Any], image: np.ndarray):
+        """Create color analysis visualization"""
+        ax.set_title('Color Blending Analysis', fontsize=12, fontweight='bold')
+        
+        if not color_analysis:
+            ax.text(0.5, 0.5, 'Color analysis not available', 
+                   ha='center', va='center', transform=ax.transAxes)
+            ax.axis('off')
+            return
+        
+        # Show dominant colors if available
+        if 'dominant_colors' in color_analysis:
+            colors = color_analysis['dominant_colors'][:8]  # Show top 8 colors
+            color_squares = np.array(colors).reshape(2, 4, 3) / 255.0
+            ax.imshow(color_squares)
+            ax.set_title('Dominant Colors', fontsize=12)
+        else:
+            # Show a small version of the image with color analysis overlay
+            small_img = cv2.resize(image, (200, 150))
+            ax.imshow(small_img)
+            
+            # Add color score overlay
+            score = color_analysis.get('score', 0)
+            ax.text(10, 20, f'Color Score: {score:.1f}/100', 
+                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                   fontsize=10, fontweight='bold')
+        
+        ax.axis('off')
+    
+    def _create_segmentation_visual(self, ax, segmentation: Dict[str, Any], image: np.ndarray):
+        """Create object segmentation visualization"""
+        ax.set_title('Object Detection', fontsize=12, fontweight='bold')
+        
+        if 'object_mask' in segmentation:
+            mask = segmentation['object_mask']
+            # Create overlay
+            overlay = image.copy()
+            overlay[mask > 0] = [255, 255, 0]  # Highlight object in yellow
+            result = cv2.addWeighted(image, 0.7, overlay, 0.3, 0)
+            ax.imshow(result)
+        else:
+            # Show original image with bounding box if available
+            display_img = image.copy()
+            if 'bounding_box' in segmentation:
+                x, y, w, h = segmentation['bounding_box']
+                cv2.rectangle(display_img, (x, y), (x+w, y+h), (255, 255, 0), 2)
+            ax.imshow(display_img)
+            ax.text(10, 20, 'Object segmentation applied', 
+                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                   fontsize=10)
+        
+        ax.axis('off')
+    
+    def _create_score_visual_summary(self, ax, results: Dict[str, Any]):
+        """Create visual score summary with color-coded indicators"""
+        ax.set_title('Performance Indicators', fontsize=12, fontweight='bold')
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+        ax.axis('off')
+        
+        # Get component scores
+        components = []
+        if 'component_scores' in results:
+            for name, score in results['component_scores'].items():
+                components.append((name.replace('_', ' ').title(), score))
+        
+        # If no component scores, use overall score
+        if not components:
+            overall = results.get('overall_score', 0)
+            components = [('Overall', overall)]
+        
+        # Draw score indicators
+        y_pos = 8.5
+        for name, score in components[:5]:  # Show top 5 components
+            # Score bar
+            bar_width = score / 100 * 7  # Scale to fit
+            color = self._get_score_color(score)
+            
+            # Background bar
+            ax.add_patch(plt.Rectangle((2, y_pos-0.2), 7, 0.4, 
+                                     facecolor='lightgray', alpha=0.3))
+            # Score bar
+            ax.add_patch(plt.Rectangle((2, y_pos-0.2), bar_width, 0.4, 
+                                     facecolor=color, alpha=0.8))
+            
+            # Label and score text
+            ax.text(0.5, y_pos, name, fontsize=10, va='center', ha='left')
+            ax.text(9.5, y_pos, f'{score:.1f}', fontsize=10, va='center', ha='right')
+            
+            y_pos -= 1.2
+        
+        # Add legend
+        ax.text(5, 1, 'Performance Scale:\n90-100: Excellent\n70-89: Good\n50-69: Fair\n<50: Poor', 
+               ha='center', va='bottom', fontsize=8,
+               bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3))
     
     def _create_html_report(self, results: Dict[str, Any], output_path: str) -> str:
         """Create HTML report with embedded visualizations"""

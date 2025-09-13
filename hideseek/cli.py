@@ -355,6 +355,11 @@ Examples:
             # Generate enhanced results with scoring
             enhanced_results = self._enhance_results_with_scoring(results, args.environment)
             
+            # Add image path and original image for report generation
+            enhanced_results['image_path'] = os.path.abspath(args.image)
+            if bg_img is not None and args.background:
+                enhanced_results['background_path'] = os.path.abspath(args.background)
+            
             # Create session if specified
             if args.session:
                 session_dir = self.data_manager.organize_test_session(args.session)

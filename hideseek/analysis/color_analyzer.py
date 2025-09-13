@@ -54,33 +54,52 @@ class ColorBlendingAnalyzer:
         
         try:
             # Step 1: Preprocessing
-            logger.debug("Step 1: Image preprocessing")
+            logger.info("Step 1: Image preprocessing")
             camo_processed = self._preprocess_image(camo_img)
             bg_processed = self._preprocess_image(bg_img) if bg_img is not None else None
+            logger.info("Step 1 complete")
             
             # Step 2: Color space conversion
-            logger.debug("Step 2: Color space conversion")
+            logger.info("Step 2: Color space conversion")
             camo_lab = self.convert_to_lab(camo_processed)
             bg_lab = self.convert_to_lab(bg_processed) if bg_processed is not None else None
+            logger.info("Step 2 complete")
             
             # Step 3: Object segmentation
-            logger.debug("Step 3: Object segmentation")
+            logger.info("Step 3: Object segmentation")
             if 'roi' in options:
                 object_mask = self._create_roi_mask(camo_img.shape[:2], options['roi'])
+                logger.info("ROI mask created")
             else:
+                logger.info("Starting object segmentation")
                 object_mask = self.segment_camouflaged_object(camo_processed, bg_processed)
+                logger.info("Object segmentation complete")
             
             # Step 4: Background sampling
-            logger.debug("Step 4: Background sampling")
+            logger.info("Step 4: Background sampling")
             if bg_lab is not None:
                 bg_samples = self._sample_background_regions(bg_lab)
             else:
+                logger.info("Creating background ring mask")
                 bg_ring_mask = self.create_background_ring(object_mask)
                 bg_samples = camo_lab[bg_ring_mask > 0]
+                logger.info(f"Background samples extracted: {len(bg_samples)} samples")
             
             # Step 5: Color analysis
-            logger.debug("Step 5: Color difference analysis")
+            logger.info("Step 5: Color difference analysis")
             object_samples = camo_lab[object_mask > 0]
+            logger.info(f"Object samples extracted: {len(object_samples)} samples")
+            
+            # Limit sample sizes for performance
+            max_samples = 500  # Much smaller for performance
+            if len(object_samples) > max_samples:
+                indices = np.random.choice(len(object_samples), max_samples, replace=False)
+                object_samples = object_samples[indices]
+                logger.info(f"Object samples reduced to: {len(object_samples)} for performance")
+            if len(bg_samples) > max_samples:
+                indices = np.random.choice(len(bg_samples), max_samples, replace=False)
+                bg_samples = bg_samples[indices] 
+                logger.info(f"Background samples reduced to: {len(bg_samples)} for performance")
             
             if len(object_samples) == 0 or len(bg_samples) == 0:
                 logger.warning("Insufficient samples for color analysis")
@@ -335,10 +354,21 @@ class ColorBlendingAnalyzer:
         h, w = lab.shape[:2]
         lab_reshaped = lab.reshape(-1, 3)
         
+        # Subsample for performance if image is large
+        if len(lab_reshaped) > 10000:  # If more than 10k pixels
+            sample_indices = np.random.choice(len(lab_reshaped), 10000, replace=False)
+            lab_sample = lab_reshaped[sample_indices]
+        else:
+            lab_sample = lab_reshaped
+            sample_indices = np.arange(len(lab_reshaped))
+        
         # Use K-means to find dominant color regions
-        n_clusters = min(8, len(np.unique(lab_reshaped.reshape(-1))))
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
-        labels = kmeans.fit_predict(lab_reshaped)
+        n_clusters = min(8, len(np.unique(lab_sample.reshape(-1))))
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=3, max_iter=100)
+        sample_labels = kmeans.fit_predict(lab_sample)
+        
+        # Predict labels for all pixels
+        labels = kmeans.predict(lab_reshaped)
         
         # Create mask for center regions (assume object is roughly centered)
         labels_image = labels.reshape(h, w)
@@ -423,7 +453,16 @@ class ColorBlendingAnalyzer:
             lab2_norm[:, 1] = lab2_norm[:, 1] - 128.0          # a: -128 to 127
             lab2_norm[:, 2] = lab2_norm[:, 2] - 128.0          # b: -128 to 127
             
-            # Calculate pairwise distances
+            # Limit sample size for performance (max 100 samples each)
+            max_samples = 100
+            if len(lab1_norm) > max_samples:
+                indices1 = np.random.choice(len(lab1_norm), max_samples, replace=False)
+                lab1_norm = lab1_norm[indices1]
+            if len(lab2_norm) > max_samples:
+                indices2 = np.random.choice(len(lab2_norm), max_samples, replace=False)
+                lab2_norm = lab2_norm[indices2]
+            
+            # Calculate pairwise distances with performance optimization
             delta_e_values = []
             for i in range(len(lab1_norm)):
                 for j in range(len(lab2_norm)):

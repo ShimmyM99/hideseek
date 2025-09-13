@@ -111,6 +111,10 @@ class HideSeekReportGenerator:
             # Image analysis page with visual explanations
             if 'original_image' in results or 'image_path' in results:
                 self._create_image_analysis_page(pdf, results)
+                
+            # Step-by-step process explanation page
+            if 'original_image' in results or 'image_path' in results:
+                self._create_process_explanation_page(pdf, results)
             
             # Score breakdown page
             if 'component_scores' in results:
@@ -311,6 +315,238 @@ class HideSeekReportGenerator:
         ax.text(5, 1, 'Performance Scale:\n90-100: Excellent\n70-89: Good\n50-69: Fair\n<50: Poor', 
                ha='center', va='bottom', fontsize=8,
                bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.3))
+    
+    def _create_process_explanation_page(self, pdf, results: Dict[str, Any]):
+        """Create a detailed visual explanation of the analysis process"""
+        
+        # Load the original image
+        image_path = results.get('image_path')
+        if image_path and os.path.exists(image_path):
+            image = cv2.imread(image_path)
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        elif 'original_image' in results:
+            image_rgb = results['original_image']
+        else:
+            return
+            
+        # Create figure with 6 subplots (2x3 grid)
+        fig = plt.figure(figsize=(8.5, 11))
+        fig.suptitle('🔍 How HideSeek Analyzes Camouflage - Step by Step', 
+                    fontsize=16, fontweight='bold', y=0.95)
+        
+        # Step 1: Original Image
+        ax1 = plt.subplot(2, 3, 1)
+        ax1.imshow(image_rgb)
+        ax1.set_title('Step 1: Original Image\n📸 What we start with', fontsize=10, fontweight='bold')
+        ax1.text(0.5, -0.15, 'This is the camouflage photo\nwe want to analyze', 
+                ha='center', va='top', transform=ax1.transAxes, fontsize=8)
+        ax1.axis('off')
+        
+        # Step 2: Environment Detection
+        ax2 = plt.subplot(2, 3, 2)
+        self._create_environment_detection_visual(ax2, results, image_rgb)
+        
+        # Step 3: Object Detection
+        ax3 = plt.subplot(2, 3, 3)
+        self._create_object_detection_visual(ax3, results, image_rgb)
+        
+        # Step 4: Color Analysis
+        ax4 = plt.subplot(2, 3, 4)
+        self._create_color_process_visual(ax4, results, image_rgb)
+        
+        # Step 5: Background Sampling
+        ax5 = plt.subplot(2, 3, 5)
+        self._create_background_sampling_visual(ax5, results, image_rgb)
+        
+        # Step 6: Final Scoring
+        ax6 = plt.subplot(2, 3, 6)
+        self._create_scoring_process_visual(ax6, results)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.90, hspace=0.4)
+        pdf.savefig(fig, bbox_inches='tight')
+        plt.close()
+    
+    def _create_environment_detection_visual(self, ax, results: Dict[str, Any], image: np.ndarray):
+        """Visual explanation of environment detection"""
+        ax.set_title('Step 2: Environment Detection\n🌲 AI identifies the setting', fontsize=10, fontweight='bold')
+        
+        # Show small image with environment overlay
+        small_img = cv2.resize(image, (150, 100))
+        ax.imshow(small_img)
+        
+        # Get environment info
+        env_type = results.get('environment_type', 'unknown')
+        env_confidence = results.get('environment_confidence', 0)
+        
+        # Add environment label
+        env_colors = {
+            'woodland': 'green',
+            'desert': 'orange', 
+            'urban': 'gray',
+            'arctic': 'lightblue',
+            'tropical': 'lime'
+        }
+        color = env_colors.get(env_type, 'black')
+        
+        ax.text(75, 15, f'{env_type.upper()}\n{env_confidence:.0%} confident', 
+               ha='center', va='center', fontsize=9, fontweight='bold',
+               bbox=dict(boxstyle='round', facecolor=color, alpha=0.7))
+        
+        ax.text(0.5, -0.15, f'AI analyzes colors & textures\nto identify: {env_type}', 
+                ha='center', va='top', transform=ax.transAxes, fontsize=8)
+        ax.axis('off')
+    
+    def _create_object_detection_visual(self, ax, results: Dict[str, Any], image: np.ndarray):
+        """Visual explanation of automatic object detection"""
+        ax.set_title('Step 3: Object Detection\n🎯 AI finds the camouflaged object', fontsize=10, fontweight='bold')
+        
+        # Create a simulated segmentation mask for visualization
+        h, w = image.shape[:2]
+        small_img = cv2.resize(image, (150, 100))
+        h_small, w_small = small_img.shape[:2]
+        
+        # Create a center-focused mask to show the concept
+        center_y, center_x = h_small // 2, w_small // 2
+        mask = np.zeros((h_small, w_small), dtype=np.uint8)
+        
+        # Create an oval-shaped object detection area
+        y_indices, x_indices = np.ogrid[:h_small, :w_small]
+        mask_area = ((x_indices - center_x) ** 2 / (w_small // 4) ** 2 + 
+                     (y_indices - center_y) ** 2 / (h_small // 6) ** 2) <= 1
+        mask[mask_area] = 255
+        
+        # Create overlay showing detected object
+        overlay = small_img.copy()
+        overlay[mask > 0] = overlay[mask > 0] * 0.7 + np.array([255, 255, 0]) * 0.3
+        ax.imshow(overlay)
+        
+        # Add outline around detected area
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for contour in contours:
+            contour = contour.reshape(-1, 2)
+            ax.plot(contour[:, 0], contour[:, 1], 'red', linewidth=2)
+        
+        ax.text(0.5, -0.15, 'K-means clustering finds\nthe object automatically', 
+                ha='center', va='top', transform=ax.transAxes, fontsize=8)
+        ax.axis('off')
+    
+    def _create_color_process_visual(self, ax, results: Dict[str, Any], image: np.ndarray):
+        """Visual explanation of color analysis process"""
+        ax.set_title('Step 4: Color Analysis\n🎨 Measure color matching', fontsize=10, fontweight='bold')
+        
+        # Get color analysis data
+        color_analysis = {}
+        if 'detailed_results' in results and 'color_blending' in results['detailed_results']:
+            color_analysis = results['detailed_results']['color_blending'].get('color_analysis', {})
+        
+        # Create color comparison visualization
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+        ax.axis('off')
+        
+        # Object colors (left side)
+        ax.add_patch(plt.Rectangle((1, 6), 1.5, 2, facecolor='brown', alpha=0.7))
+        ax.text(1.75, 7, 'Object\nColors', ha='center', va='center', fontsize=8, fontweight='bold')
+        
+        # Background colors (right side)  
+        ax.add_patch(plt.Rectangle((7.5, 6), 1.5, 2, facecolor='green', alpha=0.7))
+        ax.text(8.25, 7, 'Background\nColors', ha='center', va='center', fontsize=8, fontweight='bold')
+        
+        # Arrow showing comparison
+        ax.annotate('', xy=(7.5, 7), xytext=(2.5, 7),
+                   arrowprops=dict(arrowstyle='<->', lw=2, color='red'))
+        ax.text(5, 7.5, 'Compare', ha='center', fontsize=9, fontweight='bold', color='red')
+        
+        # Show Delta-E result if available
+        if 'delta_e_statistics' in color_analysis:
+            mean_de = color_analysis['delta_e_statistics'].get('mean_delta_e', 0)
+            ax.text(5, 5, f'Average Color Difference:\n{mean_de:.1f} ΔE units', 
+                   ha='center', fontsize=9, fontweight='bold',
+                   bbox=dict(boxstyle='round', facecolor='lightyellow'))
+        
+        ax.text(5, 2, 'Uses scientific color formulas\n(CIEDE2000) to measure\nhow well colors match', 
+                ha='center', fontsize=8)
+    
+    def _create_background_sampling_visual(self, ax, results: Dict[str, Any], image: np.ndarray):
+        """Visual explanation of background sampling"""
+        ax.set_title('Step 5: Background Sampling\n📊 Collect reference colors', fontsize=10, fontweight='bold')
+        
+        # Show image with background ring visualization
+        small_img = cv2.resize(image, (150, 100))
+        ax.imshow(small_img)
+        
+        h, w = small_img.shape[:2]
+        
+        # Draw background sampling ring (outer area)
+        ring_inner = min(h, w) // 4
+        ring_outer = min(h, w) // 2.5
+        
+        theta = np.linspace(0, 2*np.pi, 100)
+        center_x, center_y = w // 2, h // 2
+        
+        # Outer ring
+        x_outer = center_x + ring_outer * np.cos(theta)
+        y_outer = center_y + ring_outer * np.sin(theta)
+        ax.plot(x_outer, y_outer, 'blue', linewidth=3, alpha=0.8)
+        
+        # Inner boundary
+        x_inner = center_x + ring_inner * np.cos(theta) 
+        y_inner = center_y + ring_inner * np.sin(theta)
+        ax.plot(x_inner, y_inner, 'blue', linewidth=2, alpha=0.8, linestyle='--')
+        
+        # Add sample points
+        for i in range(8):
+            angle = i * np.pi / 4
+            x_sample = center_x + (ring_outer - 5) * np.cos(angle)
+            y_sample = center_y + (ring_outer - 5) * np.sin(angle)
+            ax.plot(x_sample, y_sample, 'bo', markersize=4)
+        
+        ax.text(0.5, -0.15, 'Creates ring around object\nto sample background colors', 
+                ha='center', va='top', transform=ax.transAxes, fontsize=8)
+        ax.axis('off')
+    
+    def _create_scoring_process_visual(self, ax, results: Dict[str, Any]):
+        """Visual explanation of the scoring process"""
+        ax.set_title('Step 6: Final Score\n📈 Calculate effectiveness', fontsize=10, fontweight='bold')
+        
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 10)
+        ax.axis('off')
+        
+        # Get scores
+        overall_score = results.get('overall_score', 0)
+        component_scores = results.get('component_scores', {})
+        
+        # Create simple score visualization
+        ax.text(5, 8.5, f'OVERALL SCORE', ha='center', fontsize=12, fontweight='bold')
+        ax.text(5, 7.5, f'{overall_score:.1f}/100', ha='center', fontsize=20, fontweight='bold',
+               color=self._get_score_color(overall_score))
+        
+        # Show key components
+        y_pos = 6
+        for name, score in list(component_scores.items())[:3]:
+            display_name = name.replace('_', ' ').title()
+            ax.text(5, y_pos, f'{display_name}: {score:.1f}/100', 
+                   ha='center', fontsize=9)
+            y_pos -= 0.8
+        
+        # Explanation
+        ax.text(5, 2.5, 'Combines all analysis results\ninto final camouflage\neffectiveness rating', 
+                ha='center', fontsize=8,
+                bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.3))
+        
+        # Rating interpretation
+        if overall_score >= 80:
+            rating = "Excellent camouflage! 🌟"
+        elif overall_score >= 60:
+            rating = "Good camouflage ✅"
+        elif overall_score >= 40:
+            rating = "Fair camouflage ⚠️"
+        else:
+            rating = "Poor camouflage ❌"
+            
+        ax.text(5, 1, rating, ha='center', fontsize=10, fontweight='bold')
     
     def _create_html_report(self, results: Dict[str, Any], output_path: str) -> str:
         """Create HTML report with embedded visualizations"""

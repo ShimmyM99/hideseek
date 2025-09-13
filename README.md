@@ -38,7 +38,7 @@ HideSeek analyzes camouflage effectiveness by measuring:
 
 ```bash
 # Clone the repository
-git clone https://github.com/username/hideseek.git
+git clone https://github.com/ShimmyM99/hideseek.git
 cd hideseek
 
 # Create virtual environment
@@ -52,6 +52,11 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+### Included Test Images
+The project includes sample camouflage images for testing:
+- `./data/test_images/good/` - Examples of effective camouflage patterns
+- `./data/test_images/bad/` - Examples of poor camouflage for comparison
+
 ### Using pip (when available on PyPI)
 
 ```bash
@@ -63,20 +68,20 @@ pip install hideseek
 ### CLI Usage
 
 ```bash
-# Quick analysis (fastest)
-python -m hideseek quick --image camo.jpg
+# Quick analysis (fastest) - using included test images
+python -m hideseek quick --image "./data/test_images/good/amazing-wild-animal-camouflage-nature-8-59258edad4f22__700.jpg"
 
-# Full analysis with background
-python -m hideseek test --image camo.jpg --background forest.jpg --output report.pdf
+# Full analysis with background reference
+python -m hideseek test --image "./data/test_images/good/8nksrdfqcxz91.jpg" --background "./data/test_images/good/images.jpeg" --output report.pdf
 
 # Detailed analysis with visualizations
-python -m hideseek detailed --image camo.jpg --environment woodland --visualizations
+python -m hideseek detailed --image "./data/test_images/good/images2.jpeg" --environment woodland --visualizations
 
-# Batch processing
-python -m hideseek batch --directory ./camo_samples --environment woodland --format json
+# Batch processing all good camouflage examples
+python -m hideseek batch --directory "./data/test_images/good" --environment woodland --format json
 
-# Compare multiple patterns
-python -m hideseek compare --patterns camo1.jpg camo2.jpg camo3.jpg --output comparison.pdf
+# Compare good vs bad camouflage
+python -m hideseek compare --patterns "./data/test_images/good/amazing-wild-animal-camouflage-nature-8-59258edad4f22__700.jpg" "./data/test_images/bad/original.jpg" --output comparison.pdf
 
 # System information
 python -m hideseek info
@@ -89,10 +94,10 @@ from hideseek import get_image_loader
 from hideseek.analysis.pipeline_controller import PipelineController
 from hideseek import get_data_manager
 
-# Load images
+# Load test images (using included samples)
 loader = get_image_loader()
-camo_img = loader.load_test_image("camouflage.jpg")
-bg_img = loader.load_test_image("background.jpg")
+camo_img = loader.load_test_image("./data/test_images/good/amazing-wild-animal-camouflage-nature-8-59258edad4f22__700.jpg")
+bg_img = loader.load_test_image("./data/test_images/good/images.jpeg")
 
 # Run analysis
 controller = PipelineController(get_data_manager())

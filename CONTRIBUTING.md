@@ -79,7 +79,7 @@ We welcome contributions that:
 
 - Issues: GitHub Issues
 - Discussions: GitHub Discussions
-- Email: hideseek@example.com
+- Email: 99cvteam@gmail.com
 
 ## 📄 License
 

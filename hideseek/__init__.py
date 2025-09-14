@@ -8,7 +8,7 @@ environment and how easily they can be "sought" (detected) through computer visi
 
 __version__ = "1.0.0"
 __author__ = "HideSeek Development Team"
-__email__ = "hideseek@example.com"
+__email__ = "99cvteam@gmail.com"
 
 # Lazy imports to avoid dependency issues at startup
 def get_image_loader():

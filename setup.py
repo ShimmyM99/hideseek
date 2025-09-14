@@ -10,7 +10,7 @@ setup(
     name="hideseek",
     version="1.0.0",
     author="HideSeek Development Team",
-    author_email="hideseek@example.com",
+    author_email="99cvteam@gmail.com",
     description="A professional Python application for testing and evaluating camouflage effectiveness",
     long_description=long_description,
     long_description_content_type="text/markdown",
